@@ -3,6 +3,7 @@
 #include "vec3.h"
 #include "math.h"
 #include "sky.h"
+#include "image.h"
 
 
 std::random_device rnd_dev;
