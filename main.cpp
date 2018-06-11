@@ -88,17 +88,30 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
         Vec3 dir = sampler->samples[i].cartesian_coord;
         Vec3 skyColor = sky->getSky(dir);
         for(int j = 0; j < bands*bands; j++) {
+            float sh_function = sampler->samples[i].sh_functions[j];
+            coeffs[j] = coeffs[j] + skyColor * sh_function;
         }
     }
 }
 
 
 int main() {
+    int samples = 100;
+    int bands = 10;
+
     Sampler sampler;
-    GenSamples(&sampler, 100);
-    PrecomputeSH(&sampler, 10);
+    GenSamples(&sampler, samples);
+    PrecomputeSH(&sampler, bands);
 
     Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
+    Vec3* skyCoeffs = new Vec3[bands*bands];
+    ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
+    for(int i = 0; i < bands*bands; i++) {
+        std::cout << skyCoeffs[i] << std::endl;
+    }
+
+    delete sky;
+    delete[] skyCoeffs;
     return 0;
 }
