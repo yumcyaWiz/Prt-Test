@@ -197,6 +197,30 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
+bool RayTriangleIntersect(const Ray& ray, const Vec3& p1, const Vec3& p2, const Vec3& p3) {
+    const float eps = 1e-6;
+    const Vec3 edge1 = p2 - p1;
+    const Vec3 edge2 = p3 - p1;
+    const Vec3 h = cross(ray.direction, edge2);
+    const float a = dot(edge1, h);
+    if(a >= -eps && a <= eps) return false;
+
+    const float f = 1.0f/a;
+    const Vec3 s = ray.origin - p1;
+    const float u = f*dot(s, h);
+    if(u < 0.0f || u > 1.0f) return false;
+
+    const Vec3 q = cross(s, edge1);
+    const float v = v*dot(ray.direction, q);
+    if(v < 0.0f || v > 1.0f) return false;
+
+    float t = f*dot(edge2, q);
+    if(t <= 0.0f) return false;
+
+    return true;
+}
+
+
 int samples = 100;
 int bands = 5;
 std::vector<Vec3> vertices;
