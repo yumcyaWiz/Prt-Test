@@ -198,9 +198,19 @@ std::vector<Triangle> triangles;
 Vec3* skyCoeffs;
 Vec3** objCoeffs;
 
+float cx = 0.0f;
+float cy = 0.0f;
+float cz = 0.0f;
 
+
+float angle = 0.0f;
 void render() {
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glLoadIdentity();
+    gluLookAt(cx, cy, cz, cx, cy, cz - 1.0f, 0.0f, 1.0f, 0.0f);
+
+    glRotatef(angle, 0.0f, 1.0f, 0.0f);
 
     glBegin(GL_TRIANGLES);
     for(int i = 0; i < triangles.size(); i++) {
@@ -215,8 +225,12 @@ void render() {
             c1 = c1 + skyCoeffs[k]*objCoeffs[t.v1][k];
             c2 = c2 + skyCoeffs[k]*objCoeffs[t.v2][k];
         }
+        /*
+        c0 = (normals[t.v0] + 1.0f)/2.0f;
+        c1 = (normals[t.v1] + 1.0f)/2.0f;
+        c2 = (normals[t.v2] + 1.0f)/2.0f;
+        */
 
-        std::cout << c0 << std::endl;
         glColor3f(c0.x, c0.y, c0.z);
         glVertex3f(v0.x, v0.y, v0.z);
         glColor3f(c1.x, c1.y, c1.z);
@@ -226,7 +240,37 @@ void render() {
     }
     glEnd();
 
+    angle += 0.1f;
+
     glutSwapBuffers();
+}
+
+
+void normalKeys(unsigned char key, int x, int y) {
+    switch(key) {
+        case 'a':
+            cx -= 0.01f;
+            break;
+        case 'd':
+            cx += 0.01f;
+            break;
+        case 'w':
+            cy += 0.01f;
+            break;
+        case 's':
+            cy -= 0.01f;
+            break;
+    }
+}
+void specialKeys(int key, int x, int y) {
+    switch(key) {
+        case GLUT_KEY_UP:
+            cz += 0.01f;
+            break;
+        case GLUT_KEY_DOWN:
+            cz -= 0.01f;
+            break;
+    }
 }
 
 
@@ -237,7 +281,7 @@ int main(int argc, char** argv) {
     PrecomputeSH(&sampler, bands);
 
     //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
-    Sky* sky = new TestSky();
+    Sky* sky = new SimpleSky();
     skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
@@ -276,9 +320,14 @@ int main(int argc, char** argv) {
 
 
     glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowSize(512, 512);
     glutCreateWindow("Prt_Test");
     glutDisplayFunc(render);
+    glutIdleFunc(render);
+    glutKeyboardFunc(normalKeys);
+    glutSpecialFunc(specialKeys);
+    glEnable(GL_DEPTH_TEST);
     glutMainLoop();
 
 

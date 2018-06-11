@@ -1,2 +1,2 @@
 all:
-	g++ -lGL -lglut -O2 main.cpp
+	g++ -lGL -lGLU -lglut -O2 main.cpp
