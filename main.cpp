@@ -190,7 +190,7 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 
 int main() {
     int samples = 100;
-    int bands = 8;
+    int bands = 10;
 
     Sampler sampler;
     GenSamples(&sampler, samples);
@@ -223,22 +223,17 @@ int main() {
     std::vector<Vec3> normals;
     std::vector<Triangle> triangles;
     loadObj("bunny.obj", vertices, normals, triangles);
-
-    /*
     Scene scene;
     scene.vertices = vertices;
     scene.normals = normals;
     scene.triangles = triangles;
     scene.vertices_n = vertices.size();
-    */
 
-    /*
     Vec3** objCoeffs = new Vec3*[scene.vertices_n];
     for(int i = 0; i < scene.vertices_n; i++) {
         objCoeffs[i] = new Vec3[bands*bands];
     }
     ProjectUnShadowed(objCoeffs, &sampler, &scene, bands);
-    */
 
     delete sky;
     delete[] skyCoeffs;

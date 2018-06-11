@@ -4,7 +4,7 @@
 
 
 inline long factorial(long x) {
-    if(x <= 0) return 1;
+    if(x <= 1) return 1;
     else return x * factorial(x - 1);
 }
 
@@ -15,7 +15,7 @@ inline long dfactorial(long x) {
 }
 
 
-inline float legendre(float x, int l, int m) {
+inline float legendre(float x, long l, long m) {
     if(l == m + 1) {
         return x*(2*m + 1)*legendre(x, m, m);
     }
@@ -28,12 +28,12 @@ inline float legendre(float x, int l, int m) {
 }
 
 
-inline float sph_k(int l, int m) {
+inline float sph_k(long l, long m) {
     return std::sqrt((2*l + 1)*factorial(l - std::abs(m))/(4*M_PI*factorial(l + std::abs(m))));
 }
 
 
-inline float sph(float theta, float phi, int l, int m) {
+inline float sph(float theta, float phi, long l, long m) {
     if(m > 0) {
         return std::sqrt(2)*sph_k(l, m)*std::cos(m*phi)*legendre(std::cos(theta), l, m);
     }
