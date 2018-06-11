@@ -108,16 +108,19 @@ struct Triangle {
     int v1;
     int v2;
     int v3;
+
+    Triangle() {};
+    Triangle(int v1, int v2, int v3) : v1(v1), v2(v2), v3(v3) {};
 };
 struct Scene {
-    Vec3* vertices;
-    Vec3* normals;
-    Triangle* triangles;
+    std::vector<Vec3> vertices;
+    std::vector<Vec3> normals;
+    std::vector<Triangle> triangles;
     int vertices_n;
 };
 
 
-void loadObj(const std::string& filename, Vec3* vertices, Vec3* normals, Triangle* triangles) {
+void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vector<Vec3>& normals, std::vector<Triangle>& triangles) {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -140,11 +143,25 @@ void loadObj(const std::string& filename, Vec3* vertices, Vec3* normals, Triangl
                 tinyobj::real_t vx = attrib.vertices[3*idx.vertex_index+0];
                 tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
                 tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
+                vertices.push_back(Vec3(vx, vy, vz));
                 
+                /*
                 tinyobj::real_t nx = attrib.normals[3*idx.normal_index+0];
                 tinyobj::real_t ny = attrib.normals[3*idx.normal_index+1];
                 tinyobj::real_t nz = attrib.normals[3*idx.normal_index+2];
+                normals.push_back(Vec3(nx, ny, nz));
+                */
             }
+
+            Vec3 v1 = vertices[index_offset + 0];
+            Vec3 v2 = vertices[index_offset + 1];
+            Vec3 v3 = vertices[index_offset + 2];
+            Vec3 n = normalize(cross(v2 - v1, v3 - v1));
+            for(int i  = 0; i < 3; i++) {
+                normals.push_back(n);
+            }
+
+            triangles.push_back(Triangle(index_offset+0, index_offset+1, index_offset+2));
             index_offset += fv;
         }
     }
@@ -163,6 +180,7 @@ int main() {
     Vec3* skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
+    /*
     std::ofstream file("skyCoeffs.csv");
     for(int i = 0; i < bands; i++) {
         for(int j = 0; j < bands; j++) {
@@ -178,6 +196,16 @@ int main() {
         file << std::endl;
     }
     file.close();
+    */
+
+    std::vector<Vec3> vertices;
+    std::vector<Vec3> normals;
+    std::vector<Triangle> triangles;
+    loadObj("teapot.obj", vertices, normals, triangles);
+
+    for(auto v : vertices) {
+        std::cout << v << std::endl;
+    }
 
     delete sky;
     delete[] skyCoeffs;

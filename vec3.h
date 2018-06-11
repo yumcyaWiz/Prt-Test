@@ -70,6 +70,11 @@ inline Vec3 cross(const Vec3& v1, const Vec3& v2) {
 }
 
 
+inline Vec3 normalize(const Vec3& v) {
+    return v/v.length();
+}
+
+
 inline std::ostream& operator<<(std::ostream& stream, const Vec3& v) {
     stream << "(" << v.x << ", " << v.y << ", " << v.z << ")";
     return stream;

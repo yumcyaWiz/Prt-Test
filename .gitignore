@@ -5,3 +5,4 @@ stb_image.h
 *.ppm
 *.png
 tiny_obj_loader.h
+*.obj
