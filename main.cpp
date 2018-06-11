@@ -83,9 +83,7 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 
 void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
     for(int i = 0; i < bands*bands; i++) {
-        coeffs[i].x = 0.0f;
-        coeffs[i].y = 0.0f;
-        coeffs[i].z = 0.0f;
+        coeffs[i] = Vec3(0, 0, 0);
     }
 
     for(int i = 0; i < sampler->n; i++) {
@@ -117,6 +115,8 @@ struct Scene {
     std::vector<Vec3> normals;
     std::vector<Triangle> triangles;
     int vertices_n;
+
+    Scene() {};
 };
 
 
@@ -144,13 +144,6 @@ void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vect
                 tinyobj::real_t vy = attrib.vertices[3*idx.vertex_index+1];
                 tinyobj::real_t vz = attrib.vertices[3*idx.vertex_index+2];
                 vertices.push_back(Vec3(vx, vy, vz));
-                
-                /*
-                tinyobj::real_t nx = attrib.normals[3*idx.normal_index+0];
-                tinyobj::real_t ny = attrib.normals[3*idx.normal_index+1];
-                tinyobj::real_t nz = attrib.normals[3*idx.normal_index+2];
-                normals.push_back(Vec3(nx, ny, nz));
-                */
             }
 
             Vec3 v1 = vertices[index_offset + 0];
@@ -168,22 +161,36 @@ void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vect
 }
 
 
-void loadScene(const std::string& filename, Scene* scene) {
-    std::vector<Vec3> vertices;
-    std::vector<Vec3> normals;
-    std::vector<Triangle> triangles;
-    loadObj(filename, vertices, normals, triangles);
+void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands) {
+    for(int i = 0; i < scene->vertices_n; i++) {
+        for(int j = 0; j < bands*bands; j++) {
+            coeffs[i][j] = Vec3(0, 0, 0);
+        }
+    }
 
-    scene->vertices = vertices;
-    scene->normals = normals;
-    scene->triangles = triangles;
-    scene->vertices_n = vertices.size();
+    for(int i = 0; i < scene->vertices_n; i++) {
+        for(int j = 0; j < sampler->n; j++) {
+            Sample& sample = sampler->samples[j];
+            float cos_term = std::max(dot(scene->normals[i], sample.cartesian_coord), 0.0f);
+            for(int k = 0; k < bands*bands; k++) {
+                float sh_function = sample.sh_functions[k];
+                coeffs[i][k] = coeffs[i][k] + sh_function * cos_term * Vec3(1, 1, 1);
+            }
+        }
+    }
+
+    float weight = 4.0f*M_PI / sampler->n;
+    for(int i = 0; i < scene->vertices_n; i++) {
+        for(int j = 0; j < bands*bands; j++) {
+            coeffs[i][j] = coeffs[i][j] * weight;
+        }
+    }
 }
 
 
 int main() {
     int samples = 100;
-    int bands = 10;
+    int bands = 8;
 
     Sampler sampler;
     GenSamples(&sampler, samples);
@@ -212,11 +219,29 @@ int main() {
     */
 
 
-    Scene scene;
-    loadScene("teapot.obj", &scene);
+    std::vector<Vec3> vertices;
+    std::vector<Vec3> normals;
+    std::vector<Triangle> triangles;
+    loadObj("bunny.obj", vertices, normals, triangles);
 
+    /*
+    Scene scene;
+    scene.vertices = vertices;
+    scene.normals = normals;
+    scene.triangles = triangles;
+    scene.vertices_n = vertices.size();
+    */
+
+    /*
+    Vec3** objCoeffs = new Vec3*[scene.vertices_n];
+    for(int i = 0; i < scene.vertices_n; i++) {
+        objCoeffs[i] = new Vec3[bands*bands];
+    }
+    ProjectUnShadowed(objCoeffs, &sampler, &scene, bands);
+    */
 
     delete sky;
     delete[] skyCoeffs;
+
     return 0;
 }
