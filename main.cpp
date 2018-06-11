@@ -36,27 +36,24 @@ struct Sampler {
 
 
 void GenSamples(Sampler* sampler, int n) {
-    Sample* samples = new Sample[n*n];
+    Sample* samples = new Sample[n];
     sampler->samples = samples;
     sampler->n = n;
 
     for(int i = 0; i < n; i++) {
-        for(int j = 0; j < n; j++) {
-            float u = rnd();
-            float v = rnd();
+        float u = rnd();
+        float v = rnd();
 
-            float theta = 2*std::acos(std::sqrt(1 - u));
-            float phi = 2*M_PI*v;
-            
-            float x = std::cos(phi)*std::sin(theta);
-            float y = std::cos(theta);
-            float z = std::sin(phi)*std::sin(theta);
+        float theta = 2*std::acos(std::sqrt(1 - u));
+        float phi = 2*M_PI*v;
+        
+        float x = std::cos(phi)*std::sin(theta);
+        float y = std::cos(theta);
+        float z = std::sin(phi)*std::sin(theta);
 
-            int k = n*i + j;
-            sampler->samples[k].spherical_coord = Spherical(theta, phi);
-            sampler->samples[k].cartesian_coord = Vec3(x, y, z);
-            sampler->samples[k].sh_functions = nullptr;
-        }
+        sampler->samples[i].spherical_coord = Spherical(theta, phi);
+        sampler->samples[i].cartesian_coord = Vec3(x, y, z);
+        sampler->samples[i].sh_functions = nullptr;
     }
 }
 
@@ -93,6 +90,11 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
             float sh_function = sampler->samples[i].sh_functions[j];
             coeffs[j] = coeffs[j] + skyColor * sh_function;
         }
+    }
+
+    float weight = 4.0f*M_PI / sampler->n;
+    for(int i = 0; i < sampler->n; i++) {
+        coeffs[i] = coeffs[i] * weight;
     }
 }
 

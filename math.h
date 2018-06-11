@@ -3,13 +3,13 @@
 #include <cmath>
 
 
-inline int factorial(int x) {
+inline long factorial(long x) {
     if(x <= 0) return 1;
     else return x * factorial(x - 1);
 }
 
 
-inline int dfactorial(int x) {
+inline long dfactorial(long x) {
     if(x <= 1) return 1;
     else return x*dfactorial(x - 2);
 }
