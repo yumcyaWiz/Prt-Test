@@ -4,3 +4,4 @@ stb_image.h
 *.csv
 *.ppm
 *.png
+tiny_obj_loader.h
