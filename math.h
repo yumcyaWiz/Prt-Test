@@ -23,7 +23,7 @@ inline float legendre(float x, int l, int m) {
         return std::pow(-1, m)*dfactorial(2*m - 1)*std::pow(1 - x*x, m/2);
     }
     else {
-        return (x*(2*l - 1)*legendre(x, m, l - 1) - (l + m - 1)*legendre(x, m, l - 2))/(l - m);
+        return (x*(2*l - 1)*legendre(x, l - 1, m) - (l + m - 1)*legendre(x, l - 2, m))/(l - m);
     }
 }
 

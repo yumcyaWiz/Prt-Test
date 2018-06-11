@@ -65,10 +65,11 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 
         float theta = sampler->samples[i].spherical_coord.theta;
         float phi = sampler->samples[i].spherical_coord.phi;
+        int index = 0;
         for(int l = 0; l < bands; l++) {
             for(int m = -l; m <= l; m++) {
-                int j = l*(l + 1) + m;
-                sh_functions[j] = sph(theta, phi, l, m);
+                sh_functions[index] = sph(theta, phi, l, m);
+                index++;
             }
         }
     }
@@ -76,14 +77,17 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 
 
 int main() {
-    Sampler* sampler = new Sampler;
-    GenSamples(sampler, 100);
+    Sampler sampler;
+    GenSamples(&sampler, 100);
+    PrecomputeSH(&sampler, 10);
 
 
-    for(int i = 0; i < sampler->n; i++) {
-        std::cout << sampler->samples[i].spherical_coord.theta << std::endl;
+    for(int i = 0; i < sampler.n; i++) {
+        for(int j = 0; j < 10*10; j++) {
+            std::cout << sampler.samples[i].sh_functions[j] << " ";
+        }
+        std::cout << std::endl;
     }
 
-    delete sampler;
     return 0;
 }
