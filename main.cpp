@@ -168,6 +168,19 @@ void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vect
 }
 
 
+void loadScene(const std::string& filename, Scene* scene) {
+    std::vector<Vec3> vertices;
+    std::vector<Vec3> normals;
+    std::vector<Triangle> triangles;
+    loadObj(filename, vertices, normals, triangles);
+
+    scene->vertices = vertices;
+    scene->normals = normals;
+    scene->triangles = triangles;
+    scene->vertices_n = vertices.size();
+}
+
+
 int main() {
     int samples = 100;
     int bands = 10;
@@ -198,14 +211,10 @@ int main() {
     file.close();
     */
 
-    std::vector<Vec3> vertices;
-    std::vector<Vec3> normals;
-    std::vector<Triangle> triangles;
-    loadObj("teapot.obj", vertices, normals, triangles);
 
-    for(auto v : vertices) {
-        std::cout << v << std::endl;
-    }
+    Scene scene;
+    loadScene("teapot.obj", &scene);
+
 
     delete sky;
     delete[] skyCoeffs;
