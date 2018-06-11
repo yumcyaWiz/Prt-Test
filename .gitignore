@@ -1,1 +1,3 @@
 *.out
+stb_image.h
+*.hdr

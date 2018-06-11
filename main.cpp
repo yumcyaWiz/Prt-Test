@@ -2,6 +2,7 @@
 #include <random>
 #include "vec3.h"
 #include "math.h"
+#include "sky.h"
 
 
 std::random_device rnd_dev;
@@ -76,18 +77,28 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 }
 
 
+void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
+    for(int i = 0; i < bands*bands; i++) {
+        coeffs[i].x = 0.0f;
+        coeffs[i].y = 0.0f;
+        coeffs[i].z = 0.0f;
+    }
+
+    for(int i = 0; i < sampler->n; i++) {
+        Vec3 dir = sampler->samples[i].cartesian_coord;
+        Vec3 skyColor = sky->getSky(dir);
+        for(int j = 0; j < bands*bands; j++) {
+        }
+    }
+}
+
+
 int main() {
     Sampler sampler;
     GenSamples(&sampler, 100);
     PrecomputeSH(&sampler, 10);
 
-
-    for(int i = 0; i < sampler.n; i++) {
-        for(int j = 0; j < 10*10; j++) {
-            std::cout << sampler.samples[i].sh_functions[j] << " ";
-        }
-        std::cout << std::endl;
-    }
+    Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
 
     return 0;
 }
