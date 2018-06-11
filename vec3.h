@@ -14,6 +14,10 @@ class Vec3 {
         Vec3(float x) : x(x), y(x), z(x) {};
         Vec3(float x, float y, float z) : x(x), y(y), z(z) {};
 
+        Vec3 operator-() const {
+            return Vec3(-x, -y, -z);
+        }
+
         float length() const {
             return std::sqrt(x*x + y*y + z*z);
         };

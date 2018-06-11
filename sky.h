@@ -29,7 +29,8 @@ class TestSky : public Sky {
         TestSky() {};
 
         Vec3 getSky(const Vec3& dir) const {
-            return (dir + 1.0f)/2.0f;
+            float v = std::max(dot(dir, Vec3(0, 1, 0)), 0.0f);
+            return Vec3(v, v, v);
         };
 };
 

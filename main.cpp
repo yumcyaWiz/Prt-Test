@@ -72,11 +72,10 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 
         float theta = sampler->samples[i].spherical_coord.theta;
         float phi = sampler->samples[i].spherical_coord.phi;
-        int index = 0;
         for(int l = 0; l < bands; l++) {
             for(int m = -l; m <= l; m++) {
-                sh_functions[index] = sph(theta, phi, l, m);
-                index++;
+                int k = l*(l + 1) + m;
+                sh_functions[k] = sph(theta, phi, l, m);
             }
         }
     }
@@ -171,12 +170,13 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
     }
 
     for(int i = 0; i < scene->vertices_n; i++) {
+        Vec3 color = (scene->normals[i] + 1.0f)/2.0f;
         for(int j = 0; j < sampler->n; j++) {
             Sample& sample = sampler->samples[j];
             float cos_term = std::max(dot(scene->normals[i], sample.cartesian_coord), 0.0f);
             for(int k = 0; k < bands*bands; k++) {
                 float sh_function = sample.sh_functions[k];
-                coeffs[i][k] = coeffs[i][k] + sh_function * cos_term * Vec3(1, 1, 1);
+                coeffs[i][k] = coeffs[i][k] + sh_function * cos_term * color;
             }
         }
     }
@@ -215,9 +215,9 @@ void render() {
     glBegin(GL_TRIANGLES);
     for(int i = 0; i < triangles.size(); i++) {
         Triangle& t = triangles[i];
-        Vec3& v0 = vertices[t.v0];
-        Vec3& v1 = vertices[t.v1];
-        Vec3& v2 = vertices[t.v2];
+        Vec3 v0 = vertices[t.v0];
+        Vec3 v1 = vertices[t.v1];
+        Vec3 v2 = vertices[t.v2];
 
         Vec3 c0, c1, c2;
         for(int k = 0; k < bands*bands; k++) {
@@ -225,12 +225,10 @@ void render() {
             c1 = c1 + skyCoeffs[k]*objCoeffs[t.v1][k];
             c2 = c2 + skyCoeffs[k]*objCoeffs[t.v2][k];
         }
-        /*
-        c0 = (normals[t.v0] + 1.0f)/2.0f;
-        c1 = (normals[t.v1] + 1.0f)/2.0f;
-        c2 = (normals[t.v2] + 1.0f)/2.0f;
-        */
 
+        v0 = v0 * 5;
+        v1 = v1 * 5;
+        v2 = v2 * 5;
         glColor3f(c0.x, c0.y, c0.z);
         glVertex3f(v0.x, v0.y, v0.z);
         glColor3f(c1.x, c1.y, c1.z);
@@ -281,11 +279,10 @@ int main(int argc, char** argv) {
     PrecomputeSH(&sampler, bands);
 
     //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
-    Sky* sky = new SimpleSky();
+    Sky* sky = new TestSky();
     skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
-    /*
     std::ofstream file("skyCoeffs.csv");
     for(int i = 0; i < bands; i++) {
         for(int j = 0; j < bands; j++) {
@@ -301,7 +298,6 @@ int main(int argc, char** argv) {
         file << std::endl;
     }
     file.close();
-    */
 
 
     loadObj("bunny.obj", vertices, normals, triangles);
@@ -316,6 +312,8 @@ int main(int argc, char** argv) {
     for(int i = 0; i < scene.vertices_n; i++) {
         objCoeffs[i] = new Vec3[bands*bands];
     }
+    GenSamples(&sampler, samples);
+    PrecomputeSH(&sampler, bands);
     ProjectUnShadowed(objCoeffs, &sampler, &scene, bands);
 
 
