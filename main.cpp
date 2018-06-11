@@ -35,10 +35,16 @@ struct Sample {
     Spherical spherical_coord;
     Vec3 cartesian_coord;
     float* sh_functions;
+
+    Sample() {};
+    ~Sample() {};
 };
 struct Sampler {
     Sample* samples;
     int n;
+
+    Sampler() {};
+    ~Sampler() {};
 };
 
 
@@ -97,7 +103,7 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
     }
 
     float weight = 4.0f*M_PI / sampler->n;
-    for(int i = 0; i < sampler->n; i++) {
+    for(int i = 0; i < bands*bands; i++) {
         coeffs[i] = coeffs[i] * weight;
     }
 }
@@ -190,7 +196,7 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
-int samples = 100;
+int samples = 101;
 int bands = 10;
 std::vector<Vec3> vertices;
 std::vector<Vec3> normals;
@@ -203,6 +209,7 @@ float cy = 0.0f;
 float cz = 0.0f;
 
 
+int frame = 0;
 float angle = 0.0f;
 void render() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -229,6 +236,7 @@ void render() {
         v0 = v0 * 5;
         v1 = v1 * 5;
         v2 = v2 * 5;
+
         glColor3f(c0.x, c0.y, c0.z);
         glVertex3f(v0.x, v0.y, v0.z);
         glColor3f(c1.x, c1.y, c1.z);
@@ -239,6 +247,7 @@ void render() {
     glEnd();
 
     angle += 0.1f;
+    frame++;
 
     glutSwapBuffers();
 }
@@ -258,17 +267,15 @@ void normalKeys(unsigned char key, int x, int y) {
         case 's':
             cy -= 0.01f;
             break;
+        case 'q':
+            cz -= 0.01f;
+            break;
+        case 'e':
+            cz += 0.01f;
+            break;
     }
 }
 void specialKeys(int key, int x, int y) {
-    switch(key) {
-        case GLUT_KEY_UP:
-            cz += 0.01f;
-            break;
-        case GLUT_KEY_DOWN:
-            cz -= 0.01f;
-            break;
-    }
 }
 
 
@@ -276,31 +283,34 @@ int main(int argc, char** argv) {
 
     Sampler sampler;
     GenSamples(&sampler, samples);
+    std::cout << "a" << std::endl;
     PrecomputeSH(&sampler, bands);
+    std::cout << "b" << std::endl;
 
     //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
     Sky* sky = new TestSky();
     skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
+    std::cout << "c" << std::endl;
 
     std::ofstream file("skyCoeffs.csv");
-    for(int i = 0; i < bands; i++) {
-        for(int j = 0; j < bands; j++) {
-            Vec3 v = skyCoeffs[j + bands*i];
-            float vf = (v.x + v.y + v.z)/3;
-            if(j != bands - 1) {
-                file << vf << ", ";
-            }
-            else {
-                file << vf;
-            }
+    for(int i = 0; i < bands*bands; i++) {
+        Vec3 v = skyCoeffs[i];
+        float vf = (v.x + v.y + v.z)/3;
+        if(i != bands*bands - 1) {
+            file << vf << ", ";
+        }
+        else {
+            file << vf;
         }
         file << std::endl;
     }
     file.close();
+    std::cout << "d" << std::endl;
 
 
     loadObj("bunny.obj", vertices, normals, triangles);
+    std::cout << "e" << std::endl;
     Scene scene;
     scene.vertices = vertices;
     scene.normals = normals;
