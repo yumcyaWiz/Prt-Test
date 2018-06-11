@@ -105,12 +105,12 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
 
 
 struct Triangle {
+    int v0;
     int v1;
     int v2;
-    int v3;
 
     Triangle() {};
-    Triangle(int v1, int v2, int v3) : v1(v1), v2(v2), v3(v3) {};
+    Triangle(int v0, int v1, int v2) : v0(v0), v1(v1), v2(v2) {};
 };
 struct Scene {
     std::vector<Vec3> vertices;
@@ -190,25 +190,55 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
+int samples = 100;
+int bands = 10;
+std::vector<Vec3> vertices;
+std::vector<Vec3> normals;
+std::vector<Triangle> triangles;
+Vec3* skyCoeffs;
+Vec3** objCoeffs;
+
+
 void render() {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glBegin(GL_TRIANGLES);
+    for(int i = 0; i < triangles.size(); i++) {
+        Triangle& t = triangles[i];
+        Vec3& v0 = vertices[t.v0];
+        Vec3& v1 = vertices[t.v1];
+        Vec3& v2 = vertices[t.v2];
 
+        Vec3 c0, c1, c2;
+        for(int k = 0; k < bands*bands; k++) {
+            c0 = c0 + skyCoeffs[k]*objCoeffs[t.v0][k];
+            c1 = c1 + skyCoeffs[k]*objCoeffs[t.v1][k];
+            c2 = c2 + skyCoeffs[k]*objCoeffs[t.v2][k];
+        }
+
+        std::cout << c0 << std::endl;
+        glColor3f(c0.x, c0.y, c0.z);
+        glVertex3f(v0.x, v0.y, v0.z);
+        glColor3f(c1.x, c1.y, c1.z);
+        glVertex3f(v1.x, v1.y, v1.z);
+        glColor3f(c2.x, c2.y, c2.z);
+        glVertex3f(v2.x, v2.y, v2.z);
+    }
+    glEnd();
 
     glutSwapBuffers();
 }
 
 
 int main(int argc, char** argv) {
-    int samples = 100;
-    int bands = 10;
 
     Sampler sampler;
     GenSamples(&sampler, samples);
     PrecomputeSH(&sampler, bands);
 
-    Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
-    Vec3* skyCoeffs = new Vec3[bands*bands];
+    //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
+    Sky* sky = new TestSky();
+    skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
     /*
@@ -230,9 +260,6 @@ int main(int argc, char** argv) {
     */
 
 
-    std::vector<Vec3> vertices;
-    std::vector<Vec3> normals;
-    std::vector<Triangle> triangles;
     loadObj("bunny.obj", vertices, normals, triangles);
     Scene scene;
     scene.vertices = vertices;
@@ -241,7 +268,7 @@ int main(int argc, char** argv) {
     scene.vertices_n = vertices.size();
 
 
-    Vec3** objCoeffs = new Vec3*[scene.vertices_n];
+    objCoeffs = new Vec3*[scene.vertices_n];
     for(int i = 0; i < scene.vertices_n; i++) {
         objCoeffs[i] = new Vec3[bands*bands];
     }
