@@ -11,6 +11,8 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#include <GL/glut.h>
+
 
 std::random_device rnd_dev;
 std::mt19937 mt(rnd_dev());
@@ -188,7 +190,16 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
-int main() {
+void render() {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+
+
+    glutSwapBuffers();
+}
+
+
+int main(int argc, char** argv) {
     int samples = 100;
     int bands = 10;
 
@@ -229,14 +240,26 @@ int main() {
     scene.triangles = triangles;
     scene.vertices_n = vertices.size();
 
+
     Vec3** objCoeffs = new Vec3*[scene.vertices_n];
     for(int i = 0; i < scene.vertices_n; i++) {
         objCoeffs[i] = new Vec3[bands*bands];
     }
     ProjectUnShadowed(objCoeffs, &sampler, &scene, bands);
 
+
+    glutInit(&argc, argv);
+    glutInitWindowSize(512, 512);
+    glutCreateWindow("Prt_Test");
+    glutDisplayFunc(render);
+    glutMainLoop();
+
+
     delete sky;
     delete[] skyCoeffs;
-
+    for(int i = 0; i < scene.vertices_n; i++) {
+        delete[] objCoeffs[i];
+    }
+    delete[] objCoeffs;
     return 0;
 }
