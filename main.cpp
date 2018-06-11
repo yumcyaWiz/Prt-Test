@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <random>
 #include "vec3.h"
 #include "math.h"
@@ -108,9 +109,21 @@ int main() {
     Vec3* skyCoeffs = new Vec3[bands*bands];
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
 
-    for(int i = 0; i < bands*bands; i++) {
-        std::cout << skyCoeffs[i] << std::endl;
+    std::ofstream file("skyCoeffs.csv");
+    for(int i = 0; i < bands; i++) {
+        for(int j = 0; j < bands; j++) {
+            Vec3 v = skyCoeffs[j + bands*i];
+            float vf = (v.x + v.y + v.z)/3;
+            if(j != bands - 1) {
+                file << vf << ", ";
+            }
+            else {
+                file << vf;
+            }
+        }
+        file << std::endl;
     }
+    file.close();
 
     delete sky;
     delete[] skyCoeffs;

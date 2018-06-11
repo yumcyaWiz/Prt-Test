@@ -1,3 +1,6 @@
 *.out
 stb_image.h
 *.hdr
+*.csv
+*.ppm
+*.png
