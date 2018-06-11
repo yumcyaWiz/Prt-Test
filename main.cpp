@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdlib>
 #include "vec3.h"
+#include "ray.h"
 #include "math.h"
 #include "sky.h"
 #include "image.h"
@@ -196,8 +197,8 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
-int samples = 101;
-int bands = 10;
+int samples = 100;
+int bands = 5;
 std::vector<Vec3> vertices;
 std::vector<Vec3> normals;
 std::vector<Triangle> triangles;
