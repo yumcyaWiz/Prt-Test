@@ -95,7 +95,8 @@ void PrecomputeSH(Sampler* sampler, int bands) {
 }
 
 
-void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
+Vec3 lightDir = Vec3(0, 1, 0);
+void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, int bands) {
     for(int i = 0; i < bands*bands; i++) {
         coeffs[i] = Vec3(0, 0, 0);
     }
@@ -103,7 +104,7 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
 #pragma omp parallel for
     for(int i = 0; i < sampler->n; i++) {
         Vec3 dir = sampler->samples[i].cartesian_coord;
-        Vec3 skyColor = sky->getSky(dir);
+        Vec3 skyColor = std::max(0.5f*dot(dir, lightDir), 0.0f);
         for(int j = 0; j < bands*bands; j++) {
             float sh_function = sampler->samples[i].sh_functions[j];
             coeffs[j] = coeffs[j] + skyColor * sh_function;
@@ -173,7 +174,6 @@ void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vect
             index_offset += fv;
         }
     }
-
     std::cout << "Vertex: " << vertices.size() << std::endl;
     std::cout << "Triangles: " << triangles.size() << std::endl;
 }
@@ -283,6 +283,7 @@ void ProjectShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands) {
 
 int samples = 100;
 int bands = 5;
+Sampler sampler;
 std::vector<Vec3> vertices;
 std::vector<Vec3> normals;
 std::vector<Triangle> triangles;
@@ -297,6 +298,8 @@ float cz = 0.0f;
 int frame = 0;
 float angle = 0.0f;
 void render() {
+    ProjectLightFunction(skyCoeffs, &sampler, bands);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadIdentity();
@@ -333,6 +336,7 @@ void render() {
 
     angle += 0.1f;
     frame++;
+    lightDir = normalize(Vec3(std::sin(0.2f * angle), 0, std::cos(0.2f * angle)));
 
     glutSwapBuffers();
 }
@@ -365,13 +369,13 @@ void specialKeys(int key, int x, int y) {
 
 
 int main(int argc, char** argv) {
-    Sampler sampler;
+    Timer timer;
     GenSamples(&sampler, samples);
     PrecomputeSH(&sampler, bands);
 
-    //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
-    Sky* sky = new TestSky();
     skyCoeffs = new Vec3[bands*bands];
+    /*
+     Sky* sky = TestSky();
     Timer timer;
     timer.start();
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
@@ -393,6 +397,7 @@ int main(int argc, char** argv) {
     }
     file.close();
     timer.stop("Output skyCoeffs.csv: ");
+    */
 
 
     loadObj("bunny.obj", vertices, normals, triangles);
@@ -407,11 +412,13 @@ int main(int argc, char** argv) {
     for(int i = 0; i < scene.vertices_n; i++) {
         objCoeffs[i] = new Vec3[bands*bands];
     }
-    GenSamples(&sampler, samples);
-    PrecomputeSH(&sampler, bands);
     timer.start();
     ProjectShadowed(objCoeffs, &sampler, &scene, bands);
     timer.stop("ProjectTransferFunction: ");
+
+
+    GenSamples(&sampler, samples);
+    PrecomputeSH(&sampler, bands);
 
 
     glutInit(&argc, argv);
@@ -426,7 +433,7 @@ int main(int argc, char** argv) {
     glutMainLoop();
 
 
-    delete sky;
+    //delete sky;
     delete[] skyCoeffs;
     for(int i = 0; i < scene.vertices_n; i++) {
         delete[] objCoeffs[i];
