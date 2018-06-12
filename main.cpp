@@ -15,6 +15,8 @@
 
 #include <GL/glut.h>
 
+#include <omp.h>
+
 
 std::random_device rnd_dev;
 std::mt19937 mt(rnd_dev());
@@ -75,6 +77,7 @@ void GenSamples(Sampler* sampler, int n) {
 
 
 void PrecomputeSH(Sampler* sampler, int bands) {
+#pragma omp parallel for
     for(int i = 0; i < sampler->n; i++) {
         float* sh_functions = new float[bands*bands];
         sampler->samples[i].sh_functions = sh_functions;
@@ -97,6 +100,7 @@ void ProjectLightFunction(Vec3* coeffs, Sampler* sampler, Sky* sky, int bands) {
         coeffs[i] = Vec3(0, 0, 0);
     }
 
+#pragma omp parallel for
     for(int i = 0; i < sampler->n; i++) {
         Vec3 dir = sampler->samples[i].cartesian_coord;
         Vec3 skyColor = sky->getSky(dir);
@@ -169,6 +173,9 @@ void loadObj(const std::string& filename, std::vector<Vec3>& vertices, std::vect
             index_offset += fv;
         }
     }
+
+    std::cout << "Vertex: " << vertices.size() << std::endl;
+    std::cout << "Triangles: " << triangles.size() << std::endl;
 }
 
 
@@ -181,6 +188,7 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 
     for(int i = 0; i < scene->vertices_n; i++) {
         Vec3 color = (scene->normals[i] + 1.0f)/2.0f;
+#pragma omp parallel for
         for(int j = 0; j < sampler->n; j++) {
             Sample& sample = sampler->samples[j];
             float cos_term = std::max(dot(scene->normals[i], sample.cartesian_coord), 0.0f);
@@ -251,6 +259,7 @@ void ProjectShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands) {
 
     for(int i = 0; i < scene->vertices_n; i++) {
         Vec3 color = (scene->normals[i] + 1.0f)/2.0f;
+#pragma omp parallel for schedule(dynamic, 1)
         for(int j = 0; j < sampler->n; j++) {
             Sample& sample = sampler->samples[j];
             float cos_term = std::max(dot(scene->normals[i], sample.cartesian_coord), 0.0f);
@@ -356,7 +365,6 @@ void specialKeys(int key, int x, int y) {
 
 
 int main(int argc, char** argv) {
-
     Sampler sampler;
     GenSamples(&sampler, samples);
     PrecomputeSH(&sampler, bands);
