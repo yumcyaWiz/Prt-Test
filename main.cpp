@@ -8,6 +8,7 @@
 #include "math.h"
 #include "sky.h"
 #include "image.h"
+#include "timer.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
@@ -69,6 +70,7 @@ void GenSamples(Sampler* sampler, int n) {
         sampler->samples[i].cartesian_coord = Vec3(x, y, z);
         sampler->samples[i].sh_functions = nullptr;
     }
+    std::cout << n << " Sample Generated" << std::endl;
 }
 
 
@@ -86,6 +88,7 @@ void PrecomputeSH(Sampler* sampler, int bands) {
             }
         }
     }
+    std::cout << "PrecomputeSH Finished" << std::endl;
 }
 
 
@@ -356,17 +359,19 @@ int main(int argc, char** argv) {
 
     Sampler sampler;
     GenSamples(&sampler, samples);
-    std::cout << "a" << std::endl;
     PrecomputeSH(&sampler, bands);
-    std::cout << "b" << std::endl;
 
     //Sky* sky = new IBL("PaperMill_E_3k.hdr", 0, 0);
     Sky* sky = new TestSky();
     skyCoeffs = new Vec3[bands*bands];
+    Timer timer;
+    timer.start();
     ProjectLightFunction(skyCoeffs, &sampler, sky, bands);
-    std::cout << "c" << std::endl;
+    timer.stop("ProjectLightFunction: ");
+
 
     std::ofstream file("skyCoeffs.csv");
+    timer.start();
     for(int i = 0; i < bands*bands; i++) {
         Vec3 v = skyCoeffs[i];
         float vf = (v.x + v.y + v.z)/3;
@@ -379,11 +384,10 @@ int main(int argc, char** argv) {
         file << std::endl;
     }
     file.close();
-    std::cout << "d" << std::endl;
+    timer.stop("Output skyCoeffs.csv: ");
 
 
     loadObj("bunny.obj", vertices, normals, triangles);
-    std::cout << "e" << std::endl;
     Scene scene;
     scene.vertices = vertices;
     scene.normals = normals;
@@ -397,7 +401,9 @@ int main(int argc, char** argv) {
     }
     GenSamples(&sampler, samples);
     PrecomputeSH(&sampler, bands);
+    timer.start();
     ProjectShadowed(objCoeffs, &sampler, &scene, bands);
+    timer.stop("ProjectTransferFunction: ");
 
 
     glutInit(&argc, argv);
