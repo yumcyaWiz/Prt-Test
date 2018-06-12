@@ -197,7 +197,7 @@ void ProjectUnShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands)
 }
 
 
-bool RayTriangleIntersect(const Ray& ray, const Vec3& p1, const Vec3& p2, const Vec3& p3) {
+bool RayTriangleIntersection(const Ray& ray, const Vec3& p1, const Vec3& p2, const Vec3& p3) {
     const float eps = 1e-6;
     const Vec3 edge1 = p2 - p1;
     const Vec3 edge2 = p3 - p1;
@@ -211,13 +211,61 @@ bool RayTriangleIntersect(const Ray& ray, const Vec3& p1, const Vec3& p2, const 
     if(u < 0.0f || u > 1.0f) return false;
 
     const Vec3 q = cross(s, edge1);
-    const float v = v*dot(ray.direction, q);
-    if(v < 0.0f || v > 1.0f) return false;
+    const float v = f*dot(ray.direction, q);
+    if(v < 0.0f || u + v > 1.0f) return false;
 
     float t = f*dot(edge2, q);
     if(t <= 0.0f) return false;
 
     return true;
+}
+
+
+bool Visibility(Scene* scene, int vertexID, const Vec3& direction) {
+    Vec3 p = scene->vertices[vertexID];
+    for(int i = 0; i < scene->triangles.size(); i++) {
+        Triangle t = scene->triangles[i];
+        if(vertexID != t.v0 && vertexID != t.v1 && vertexID != t.v2) {
+            Vec3 v0 = scene->vertices[t.v0];
+            Vec3 v1 = scene->vertices[t.v1];
+            Vec3 v2 = scene->vertices[t.v2];
+            Ray ray = Ray(p + 0.01f*scene->normals[vertexID], direction);
+            if(RayTriangleIntersection(ray, v0, v1, v2)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
+void ProjectShadowed(Vec3** coeffs, Sampler* sampler, Scene* scene, int bands) {
+    for(int i = 0; i < scene->vertices_n; i++) {
+        for(int j = 0; j < bands*bands; j++) {
+            coeffs[i][j] = Vec3(0, 0, 0);
+        }
+    }
+
+    for(int i = 0; i < scene->vertices_n; i++) {
+        Vec3 color = (scene->normals[i] + 1.0f)/2.0f;
+        for(int j = 0; j < sampler->n; j++) {
+            Sample& sample = sampler->samples[j];
+            float cos_term = std::max(dot(scene->normals[i], sample.cartesian_coord), 0.0f);
+            if(Visibility(scene, i, sample.cartesian_coord)) {
+                for(int k = 0; k < bands*bands; k++) {
+                    float sh_function = sample.sh_functions[k];
+                    coeffs[i][k] = coeffs[i][k] + sh_function * cos_term * color;
+                }
+            }
+        }
+    }
+
+    float weight = 4.0f*M_PI / sampler->n;
+    for(int i = 0; i < scene->vertices_n; i++) {
+        for(int j = 0; j < bands*bands; j++) {
+            coeffs[i][j] = coeffs[i][j] * weight;
+        }
+    }
 }
 
 
@@ -349,7 +397,7 @@ int main(int argc, char** argv) {
     }
     GenSamples(&sampler, samples);
     PrecomputeSH(&sampler, bands);
-    ProjectUnShadowed(objCoeffs, &sampler, &scene, bands);
+    ProjectShadowed(objCoeffs, &sampler, &scene, bands);
 
 
     glutInit(&argc, argv);
